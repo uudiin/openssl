@@ -40,6 +40,21 @@ typedef struct {
     int tls_aad_len;            /* TLS AAD length */
 } EVP_SM4_GCM_CTX;
 
+typedef struct {
+    union {
+        OSSL_UNION_ALIGN;
+        SM4_KEY ks;
+    } ks;                       /* SM4 key schedule to use */
+    int key_set;                /* Set if key initialised */
+    int iv_set;                 /* Set if an iv is set */
+    int tag_set;                /* Set if tag is valid */
+    int len_set;                /* Set if message length set */
+    int L, M;                   /* L and M parameters from RFC3610 */
+    int tls_aad_len;            /* TLS AAD length */
+    CCM128_CONTEXT ccm;
+    ccm128_f str;
+} EVP_SM4_CCM_CTX;
+
 static int sm4_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
                         const unsigned char *iv, int enc)
 {
@@ -450,6 +465,263 @@ static const EVP_CIPHER sm4_gcm_mode = {
 const EVP_CIPHER *EVP_sm4_gcm(void)
 {
     return &sm4_gcm_mode;
+}
+
+static int sm4_ccm_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
+                            const unsigned char *iv, int enc)
+{
+    EVP_SM4_CCM_CTX *cctx = EVP_C_DATA(EVP_SM4_CCM_CTX, ctx);
+
+    if (!iv && !key)
+        return 1;
+
+    if (key) {
+        ossl_sm4_set_key(key, &cctx->ks.ks);
+        CRYPTO_ccm128_init(&cctx->ccm, cctx->M, cctx->L,
+                           &cctx->ks, (block128_f) ossl_sm4_encrypt);
+        cctx->str = NULL;
+        cctx->key_set = 1;
+    }
+    if (iv) {
+        memcpy(ctx->iv, iv, 15 - cctx->L);
+        cctx->iv_set = 1;
+    }
+    return 1;
+}
+
+static int sm4_ccm_ctrl(EVP_CIPHER_CTX *ctx, int type, int arg, void *ptr)
+{
+    EVP_SM4_CCM_CTX *cctx = EVP_C_DATA(EVP_SM4_CCM_CTX, ctx);
+
+    switch (type) {
+    case EVP_CTRL_INIT:
+        cctx->key_set = 0;
+        cctx->iv_set = 0;
+        cctx->L = 8;
+        cctx->M = 12;
+        cctx->tag_set = 0;
+        cctx->len_set = 0;
+        cctx->tls_aad_len = -1;
+        return 1;
+
+    case EVP_CTRL_GET_IVLEN:
+        *(int *)ptr = 15 - cctx->L;
+        return 1;
+
+    case EVP_CTRL_AEAD_TLS1_AAD:
+        /* Save the AAD for later use */
+        if (arg != EVP_AEAD_TLS1_AAD_LEN)
+            return 0;
+        memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), ptr, arg);
+        cctx->tls_aad_len = arg;
+        {
+            uint16_t len =
+                EVP_CIPHER_CTX_buf_noconst(ctx)[arg - 2] << 8
+                | EVP_CIPHER_CTX_buf_noconst(ctx)[arg - 1];
+            /* Correct length for explicit IV */
+            if (len < EVP_CCM_TLS_EXPLICIT_IV_LEN)
+                return 0;
+            len -= EVP_CCM_TLS_EXPLICIT_IV_LEN;
+            /* If decrypting correct for tag too */
+            if (!EVP_CIPHER_CTX_is_encrypting(ctx)) {
+                if (len < cctx->M)
+                    return 0;
+                len -= cctx->M;
+            }
+            EVP_CIPHER_CTX_buf_noconst(ctx)[arg - 2] = len >> 8;
+            EVP_CIPHER_CTX_buf_noconst(ctx)[arg - 1] = len & 0xff;
+        }
+        /* Extra padding: tag appended to record */
+        return cctx->M;
+
+    case EVP_CTRL_CCM_SET_IV_FIXED:
+        /* Sanity check length */
+        if (arg != EVP_CCM_TLS_FIXED_IV_LEN)
+            return 0;
+        /* Just copy to first part of IV */
+        memcpy(ctx->iv, ptr, arg);
+        return 1;
+
+    case EVP_CTRL_AEAD_SET_IVLEN:
+        arg = 15 - arg;
+        /* fall thru */
+    case EVP_CTRL_CCM_SET_L:
+        if (arg < 2 || arg > 8)
+            return 0;
+        cctx->L = arg;
+        return 1;
+    case EVP_CTRL_AEAD_SET_TAG:
+        if ((arg & 1) || arg < 4 || arg > 16)
+            return 0;
+        if (EVP_CIPHER_CTX_is_encrypting(ctx) && ptr)
+            return 0;
+        if (ptr) {
+            cctx->tag_set = 1;
+            memcpy(EVP_CIPHER_CTX_buf_noconst(ctx), ptr, arg);
+        }
+        cctx->M = arg;
+        return 1;
+
+    case EVP_CTRL_AEAD_GET_TAG:
+        if (!EVP_CIPHER_CTX_is_encrypting(ctx) || !cctx->tag_set)
+            return 0;
+        if (!CRYPTO_ccm128_tag(&cctx->ccm, ptr, (size_t)arg))
+            return 0;
+        cctx->tag_set = 0;
+        cctx->iv_set = 0;
+        cctx->len_set = 0;
+        return 1;
+
+    case EVP_CTRL_COPY:
+        {
+            EVP_CIPHER_CTX *out = ptr;
+            EVP_SM4_CCM_CTX *cctx_out = EVP_C_DATA(EVP_SM4_CCM_CTX, out);
+            if (cctx->ccm.key) {
+                if (cctx->ccm.key != &cctx->ks)
+                    return 0;
+                cctx_out->ccm.key = &cctx_out->ks;
+            }
+            return 1;
+        }
+
+    default:
+        return -1;
+    }
+}
+
+static int sm4_ccm_tls_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                              const unsigned char *in, size_t len)
+{
+    EVP_SM4_CCM_CTX *cctx = EVP_C_DATA(EVP_SM4_CCM_CTX, ctx);
+    CCM128_CONTEXT *ccm = &cctx->ccm;
+
+    /* Encrypt/decrypt must be performed in place */
+    if (out != in || len < (EVP_CCM_TLS_EXPLICIT_IV_LEN + (size_t)cctx->M))
+        return -1;
+    /* If encrypting set explicit IV from sequence number (start of AAD) */
+    if (EVP_CIPHER_CTX_is_encrypting(ctx))
+        memcpy(out, EVP_CIPHER_CTX_buf_noconst(ctx),
+               EVP_CCM_TLS_EXPLICIT_IV_LEN);
+    /* Get rest of IV from explicit IV */
+    memcpy(ctx->iv + EVP_CCM_TLS_FIXED_IV_LEN, in,
+           EVP_CCM_TLS_EXPLICIT_IV_LEN);
+    /* Correct length value */
+    len -= EVP_CCM_TLS_EXPLICIT_IV_LEN + cctx->M;
+    if (CRYPTO_ccm128_setiv(ccm, ctx->iv, 15 - cctx->L,
+                            len))
+            return -1;
+    /* Use saved AAD */
+    CRYPTO_ccm128_aad(ccm, EVP_CIPHER_CTX_buf_noconst(ctx),
+                      cctx->tls_aad_len);
+    /* Fix buffer to point to payload */
+    in += EVP_CCM_TLS_EXPLICIT_IV_LEN;
+    out += EVP_CCM_TLS_EXPLICIT_IV_LEN;
+    if (EVP_CIPHER_CTX_is_encrypting(ctx)) {
+        if (cctx->str ? CRYPTO_ccm128_encrypt_ccm64(ccm, in, out, len, cctx->str)
+                      : CRYPTO_ccm128_encrypt(ccm, in, out, len))
+            return -1;
+        if (!CRYPTO_ccm128_tag(ccm, out + len, cctx->M))
+            return -1;
+        return len + EVP_CCM_TLS_EXPLICIT_IV_LEN + cctx->M;
+    } else {
+        if (cctx->str ? !CRYPTO_ccm128_decrypt_ccm64(ccm, in, out, len, cctx->str)
+                      : !CRYPTO_ccm128_decrypt(ccm, in, out, len)) {
+            unsigned char tag[16];
+            if (CRYPTO_ccm128_tag(ccm, tag, cctx->M)) {
+                if (!CRYPTO_memcmp(tag, in + len, cctx->M))
+                    return len;
+            }
+        }
+        OPENSSL_cleanse(out, len);
+        return -1;
+    }
+}
+
+static int sm4_ccm_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    EVP_SM4_CCM_CTX *cctx = EVP_C_DATA(EVP_SM4_CCM_CTX, ctx);
+    CCM128_CONTEXT *ccm = &cctx->ccm;
+
+    /* If not set up, return error */
+    if (!cctx->key_set)
+        return -1;
+
+    if (cctx->tls_aad_len >= 0)
+        return sm4_ccm_tls_cipher(ctx, out, in, len);
+
+    /* EVP_*Final() doesn't return any data */
+    if (in == NULL && out != NULL)
+        return 0;
+
+    if (!cctx->iv_set)
+        return -1;
+
+    if (!out) {
+        if (!in) {
+            if (CRYPTO_ccm128_setiv(ccm, ctx->iv, 15 - cctx->L, len))
+                return -1;
+            cctx->len_set = 1;
+            return len;
+        }
+        /* If have AAD need message length */
+        if (!cctx->len_set && len)
+            return -1;
+        CRYPTO_ccm128_aad(ccm, in, len);
+        return len;
+    }
+
+    /* The tag must be set before actually decrypting data */
+    if (!EVP_CIPHER_CTX_is_encrypting(ctx) && !cctx->tag_set)
+        return -1;
+
+    /* If not set length yet do it */
+    if (!cctx->len_set) {
+        if (CRYPTO_ccm128_setiv(ccm, ctx->iv, 15 - cctx->L, len))
+            return -1;
+        cctx->len_set = 1;
+    }
+    if (EVP_CIPHER_CTX_is_encrypting(ctx)) {
+        if (cctx->str ? CRYPTO_ccm128_encrypt_ccm64(ccm, in, out, len, cctx->str)
+                      : CRYPTO_ccm128_encrypt(ccm, in, out, len))
+            return -1;
+        cctx->tag_set = 1;
+        return len;
+    } else {
+        int rv = -1;
+        if (cctx->str ? !CRYPTO_ccm128_decrypt_ccm64(ccm, in, out, len,
+                                                     cctx->str) :
+            !CRYPTO_ccm128_decrypt(ccm, in, out, len)) {
+            unsigned char tag[16];
+            if (CRYPTO_ccm128_tag(ccm, tag, cctx->M)) {
+                if (!CRYPTO_memcmp(tag, EVP_CIPHER_CTX_buf_noconst(ctx),
+                                   cctx->M))
+                    rv = len;
+            }
+        }
+        if (rv == -1)
+            OPENSSL_cleanse(out, len);
+        cctx->iv_set = 0;
+        cctx->tag_set = 0;
+        cctx->len_set = 0;
+        return rv;
+    }
+}
+
+static const EVP_CIPHER sm4_ccm_mode = {
+    NID_sm4_ccm, 1, 16, 12,
+    SM4_AUTH_FLAGS | EVP_CIPH_CCM_MODE,
+    EVP_ORIG_GLOBAL,
+    sm4_ccm_init_key,
+    sm4_ccm_cipher,
+    NULL,
+    sizeof(EVP_SM4_CCM_CTX),
+    NULL, NULL, sm4_ccm_ctrl, NULL
+};
+
+const EVP_CIPHER *EVP_sm4_ccm(void)
+{
+    return &sm4_ccm_mode;
 }
 
 #endif

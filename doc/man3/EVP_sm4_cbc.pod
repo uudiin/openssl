@@ -9,6 +9,7 @@ EVP_sm4_cfb128,
 EVP_sm4_ofb,
 EVP_sm4_ctr
 EVP_sm4_gcm
+EVP_sm4_ccm
 - EVP SM4 cipher
 
 =head1 SYNOPSIS
@@ -22,6 +23,7 @@ EVP_sm4_gcm
  const EVP_CIPHER *EVP_sm4_ofb(void);
  const EVP_CIPHER *EVP_sm4_ctr(void);
  const EVP_CIPHER *EVP_sm4_gcm(void);
+ const EVP_CIPHER *EVP_sm4_ccm(void);
 
 =head1 DESCRIPTION
 
@@ -38,9 +40,10 @@ EVP_sm4_cfb128(),
 EVP_sm4_ofb(),
 EVP_sm4_ctr()
 EVP_sm4_gcm()
+EVP_sm4_ccm()
 
-The SM4 blockcipher with a 128-bit key in CBC, ECB, CFB, OFB, CTR and GCM
-modes respectively.
+The SM4 blockcipher with a 128-bit key in CBC, ECB, CFB, OFB, CTR, GCM and
+CCM modes respectively.
 
 =back
 

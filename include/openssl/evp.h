@@ -1141,6 +1141,7 @@ const EVP_CIPHER *EVP_sm4_cfb128(void);
 const EVP_CIPHER *EVP_sm4_ofb(void);
 const EVP_CIPHER *EVP_sm4_ctr(void);
 const EVP_CIPHER *EVP_sm4_gcm(void);
+const EVP_CIPHER *EVP_sm4_ccm(void);
 # endif
 
 # ifndef OPENSSL_NO_DEPRECATED_1_1_0
