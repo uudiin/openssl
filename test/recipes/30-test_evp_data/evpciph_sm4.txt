@@ -49,6 +49,7 @@ Ciphertext = 17f399f08c67d5ee19d0dc9969c4bb7d5fd46fd3756489069157b282bb200735d82
 
 Title = SM4 CCM test vectors from RFC8998
 
+Cipher = SM4-CCM
 Key = 0123456789abcdeffedcba9876543210
 IV = 00001234567800000000abcd
 AAD = feedfacedeadbeeffeedfacedeadbeefabaddad2
