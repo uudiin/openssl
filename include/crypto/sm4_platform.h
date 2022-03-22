@@ -11,9 +11,28 @@
 # define OSSL_SM4_PLATFORM_H
 # pragma once
 
+# ifdef VPSM4_ASM
+void vpsm4_crypt_blk8(const uint32_t *rkey, unsigned char *dst,
+                      const unsigned char *src, size_t nblks);
+void vpsm4_cbc_dec_blk8(const uint32_t *rkey, unsigned char *dst,
+                        const unsigned char *src, unsigned char *iv,
+                        size_t nblks);
+void vpsm4_cfb_dec_blk8(const uint32_t *rkey, unsigned char *dst,
+                        const unsigned char *src, unsigned char *iv,
+                        size_t nblks);
+void vpsm4_ctr_enc_blk8(const uint32_t *rkey, unsigned char *dst,
+                        const unsigned char *src, unsigned char *iv,
+                        size_t nblks);
+# endif /* VPSM4_ASM */
+
 # if defined(OPENSSL_CPUID_OBJ)
 #  if (defined(__arm__) || defined(__arm) || defined(__aarch64__))
 #   include "arm_arch.h"
+#   if __ARM_MAX_ARCH__>=7
+#    if defined(VPSM4_ASM)
+#     define VPSM4_CAPABLE (OPENSSL_armcap_P & ARMV7_NEON)
+#    endif
+#   endif
 #   if __ARM_MAX_ARCH__>=8
 #    define HWSM4_CAPABLE (OPENSSL_armcap_P & ARMV8_SM4)
 #    define HWSM4_set_encrypt_key sm4_v8_set_encrypt_key

@@ -112,6 +112,131 @@ static int sm4_init_key(EVP_CIPHER_CTX *ctx, const unsigned char *key,
     return 1;
 }
 
+#if defined(VPSM4_CAPABLE) && !defined(HWSM4_CAPABLE)
+
+#define BYTES2BLK8(nbytes)  (((nbytes) >> 4) & ~(8 - 1))
+
+static int sm4_cbc_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY, ctx);
+
+    if (EVP_CIPHER_CTX_is_encrypting(ctx)) {
+        CRYPTO_cbc128_encrypt(in, out, len, &dat->ks, ctx->iv,
+                              dat->block);
+    } else {
+        size_t blks = BYTES2BLK8(len);
+
+        if (blks) {
+            vpsm4_cbc_dec_blk8(dat->ks.rk, out, in, ctx->iv, blks);
+            in += blks * 16;
+            out += blks * 16;
+            len -= blks * 16;
+        }
+
+        if (len)
+            CRYPTO_cbc128_decrypt(in, out, len, &dat->ks,
+                                  ctx->iv, dat->block);
+    }
+}
+
+static int sm4_cfb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    int num = EVP_CIPHER_CTX_get_num(ctx);
+
+    if (EVP_CIPHER_CTX_is_encrypting(ctx)) {
+        CRYPTO_cfb128_encrypt(in, out, len, &dat->ks,
+                              ctx->iv, &num,
+                              EVP_CIPHER_CTX_is_encrypting(ctx),
+                              dat->block);
+    } else {
+        size_t blks = BYTES2BLK8(len);
+
+        if (blks) {
+            vpsm4_cfb_dec_blk8(dat->ks.rk, out, in, ctx->iv, blks);
+            in += blks * 16;
+            out += blks * 16;
+            len -= blks * 16;
+        }
+
+        if (len)
+            CRYPTO_cfb128_encrypt(in, out, len, &dat->ks,
+                                  ctx->iv, &num,
+                                  EVP_CIPHER_CTX_is_encrypting(ctx),
+                                  dat->block);
+    }
+
+    EVP_CIPHER_CTX_set_num(ctx, num);
+    return 1;
+}
+
+static int sm4_ecb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    size_t bl = EVP_CIPHER_CTX_get_block_size(ctx);
+    size_t i;
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    size_t blks;
+
+    if (len < bl)
+        return 1;
+
+    blks = BYTES2BLK8(len);
+    if (blks) {
+        vpsm4_crypt_blk8(dat->ks.rk, out, in, blks);
+        in += blks * 16;
+        out += blks * 16;
+        len -= blks * 16;
+    }
+
+    if (len) {
+        for (i = 0, len -= bl; i <= len; i += bl)
+            (*dat->block) (in + i, out + i, &dat->ks);
+    }
+
+    return 1;
+}
+
+static int sm4_ctr_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    int n = EVP_CIPHER_CTX_get_num(ctx);
+    unsigned int num;
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    size_t blks;
+
+    if (n < 0)
+        return 0;
+    num = (unsigned int)n;
+
+    while (num && len) {
+        *(out++) = *(in++) ^ ecount_buf[num];
+        --len;
+        num = (num + 1) % 16;
+    }
+
+    blks = BYTES2BLK8(len);
+    if (blks) {
+        vpsm4_ctr_enc_blk8(dat->ks.rk, out, in, ctx->iv, blks);
+        in += blks * 16;
+        out += blks * 16;
+        len -= blks * 16;
+    }
+
+    if (len)
+        CRYPTO_ctr128_encrypt(in, out, len, &dat->ks,
+                              ctx->iv,
+                              EVP_CIPHER_CTX_buf_noconst(ctx), &num,
+                              dat->block);
+
+    EVP_CIPHER_CTX_set_num(ctx, num);
+    return 1;
+}
+
+#else
+
 static int sm4_cbc_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                           const unsigned char *in, size_t len)
 {
@@ -162,18 +287,6 @@ static int sm4_ecb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
     return 1;
 }
 
-static int sm4_ofb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
-                          const unsigned char *in, size_t len)
-{
-    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
-    int num = EVP_CIPHER_CTX_get_num(ctx);
-
-    CRYPTO_ofb128_encrypt(in, out, len, &dat->ks,
-                          ctx->iv, &num, dat->block);
-    EVP_CIPHER_CTX_set_num(ctx, num);
-    return 1;
-}
-
 static int sm4_ctr_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                           const unsigned char *in, size_t len)
 {
@@ -195,6 +308,20 @@ static int sm4_ctr_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                               ctx->iv,
                               EVP_CIPHER_CTX_buf_noconst(ctx), &num,
                               dat->block);
+    EVP_CIPHER_CTX_set_num(ctx, num);
+    return 1;
+}
+
+#endif
+
+static int sm4_ofb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
+                          const unsigned char *in, size_t len)
+{
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    int num = EVP_CIPHER_CTX_get_num(ctx);
+
+    CRYPTO_ofb128_encrypt(in, out, len, &dat->ks,
+                          ctx->iv, &num, dat->block);
     EVP_CIPHER_CTX_set_num(ctx, num);
     return 1;
 }

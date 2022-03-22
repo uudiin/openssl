@@ -1,8 +1,8 @@
 LIBS=../../libcrypto
 
 IF[{- !$disabled{asm} -}]
-  $SM4DEF_aarch64=SM4_ASM
-  $SM4ASM_aarch64=sm4-armv8.S
+  $SM4DEF_aarch64=SM4_ASM VPSM4_ASM
+  $SM4ASM_aarch64=sm4-armv8.S vpsm4-armv8.S
 
   # Now that we have defined all the arch specific variables, use the
   # appropriate one, and define the appropriate macros
