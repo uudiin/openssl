@@ -74,7 +74,7 @@ vpsm4_consts:
 /* Helper macros. */
 
 #define PREPARE                                                 \
-        adr_l           x5, .Lsm4_sbox;                         \
+        adr             x5, .Lsm4_sbox;                         \
         ld1             {v16.16b-v19.16b}, [x5], #64;           \
         ld1             {v20.16b-v23.16b}, [x5], #64;           \
         ld1             {v24.16b-v27.16b}, [x5], #64;           \

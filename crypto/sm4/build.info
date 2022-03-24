@@ -30,3 +30,5 @@ ENDIF
 
 GENERATE[sm4-armv8.S]=asm/sm4-armv8.pl
 INCLUDE[sm4-armv8.o]=..
+
+INCLUDE[vpsm4-armv8.o]=..
