@@ -73,10 +73,119 @@ static int cipher_hw_sm4_initkey(PROV_CIPHER_CTX *ctx,
 
 IMPLEMENT_CIPHER_HW_COPYCTX(cipher_hw_sm4_copyctx, PROV_SM4_CTX)
 
-# define PROV_CIPHER_HW_sm4_mode(mode)                                         \
+#if defined(VPSM4_CAPABLE) && !defined(HWSM4_CAPABLE)
+
+#define BYTES2BLK8(nbytes)  (((nbytes) >> 4) & ~(8 - 1))
+
+int cipher_hw_vpsm4_cbc(PROV_CIPHER_CTX *dat, unsigned char *out,
+                        const unsigned char *in, size_t len)
+{
+    if (dat->enc) {
+        CRYPTO_cbc128_encrypt(in, out, len, dat->ks, dat->iv, dat->block);
+    } else {
+        size_t blks = BYTES2BLK8(len);
+
+        if (blks) {
+            vpsm4_cbc_dec_blk8(dat->ks.rk, out, in, dat->iv, blks);
+            in += blks * 16;
+            out += blks * 16;
+            len -= blks * 16;
+        }
+
+        if (len)
+            CRYPTO_cbc128_decrypt(in, out, len, dat->ks, dat->iv, dat->block);
+    }
+
+    return 1;
+}
+
+int cipher_hw_vpsm4_ecb(PROV_CIPHER_CTX *dat, unsigned char *out,
+                        const unsigned char *in, size_t len)
+{
+    size_t i, bl = dat->blocksize;
+    size_t blks;
+
+    if (len < bl)
+        return 1;
+
+    blks = BYTES2BLK8(len);
+    if (blks) {
+        vpsm4_crypt_blk8(dat->ks.rk, out, in, blks);
+        in += blks * 16;
+        out += blks * 16;
+        len -= blks * 16;
+    }
+
+    if (len) {
+        for (i = 0, len -= bl; i <= len; i += bl)
+            (*dat->block) (in + i, out + i, dat->ks);
+    }
+
+    return 1;
+}
+
+int cipher_hw_vpsm4_cfb128(PROV_CIPHER_CTX *dat, unsigned char *out,
+                           const unsigned char *in, size_t len)
+{
+    int num = dat->num;
+
+    if (dat->enc) {
+        CRYPTO_cfb128_encrypt(in, out, len, dat->ks, dat->iv, &num, dat->enc,
+                              dat->block);
+    } else {
+        size_t blks = BYTES2BLK8(len);
+
+        if (blks) {
+            vpsm4_cfb_dec_blk8(dat->ks.rk, out, in, dat->iv, blks);
+            in += blks * 16;
+            out += blks * 16;
+            len -= blks * 16;
+        }
+
+        if (len)
+            CRYPTO_cfb128_encrypt(in, out, len, dat->ks, dat->iv, &num,
+                                  dat->enc, dat->block);
+    }
+
+    dat->num = num;
+
+    return 1;
+}
+
+int cipher_hw_vpsm4_ctr(PROV_CIPHER_CTX *dat, unsigned char *out,
+                        const unsigned char *in, size_t len)
+{
+    unsigned int num = dat->num;
+    size_t blks;
+
+    while (num && len) {
+        *(out++) = *(in++) ^ dat->buf[num];
+        --len;
+        num = (num + 1) % 16;
+    }
+
+    blks = BYTES2BLK8(len);
+    if (blks) {
+        vpsm4_ctr_enc_blk8(dat->ks.rk, out, in, dat->iv, blks);
+        in += blks * 16;
+        out += blks * 16;
+        len -= blks * 16;
+    }
+
+    if (len)
+        CRYPTO_ctr128_encrypt(in, out, len, dat->ks, dat->iv, dat->buf,
+                              &num, dat->block);
+    dat->num = num;
+
+    return 1;
+}
+
+#endif
+
+# define PROV_CIPHER_HW_sm4_mode(mode, cipher)                                 \
 static const PROV_CIPHER_HW sm4_##mode = {                                     \
     cipher_hw_sm4_initkey,                                                     \
-    ossl_cipher_hw_generic_##mode,                                             \
+    cipher,                                                                    \
     cipher_hw_sm4_copyctx                                                      \
 };                                                                             \
 const PROV_CIPHER_HW *ossl_prov_cipher_hw_sm4_##mode(size_t keybits)           \
@@ -84,8 +193,15 @@ const PROV_CIPHER_HW *ossl_prov_cipher_hw_sm4_##mode(size_t keybits)           \
     return &sm4_##mode;                                                        \
 }
 
-PROV_CIPHER_HW_sm4_mode(cbc)
-PROV_CIPHER_HW_sm4_mode(ecb)
-PROV_CIPHER_HW_sm4_mode(ofb128)
-PROV_CIPHER_HW_sm4_mode(cfb128)
-PROV_CIPHER_HW_sm4_mode(ctr)
+#if defined(VPSM4_CAPABLE) && !defined(HWSM4_CAPABLE)
+PROV_CIPHER_HW_sm4_mode(cbc, cipher_hw_vpsm4_cbc)
+PROV_CIPHER_HW_sm4_mode(ecb, cipher_hw_vpsm4_ecb)
+PROV_CIPHER_HW_sm4_mode(cfb128, cipher_hw_vpsm4_cfb128)
+PROV_CIPHER_HW_sm4_mode(ctr, cipher_hw_vpsm4_ctr)
+#else
+PROV_CIPHER_HW_sm4_mode(cbc, ossl_cipher_hw_generic_cbc)
+PROV_CIPHER_HW_sm4_mode(ecb, ossl_cipher_hw_generic_ecb)
+PROV_CIPHER_HW_sm4_mode(cfb128, ossl_cipher_hw_generic_cfb128)
+PROV_CIPHER_HW_sm4_mode(ctr, ossl_cipher_hw_generic_ctr)
+#endif
+PROV_CIPHER_HW_sm4_mode(ofb128, ossl_cipher_hw_generic_ofb128)

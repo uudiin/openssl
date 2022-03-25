@@ -143,7 +143,7 @@ static int sm4_cbc_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
 static int sm4_cfb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
                           const unsigned char *in, size_t len)
 {
-    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY, ctx);
     int num = EVP_CIPHER_CTX_get_num(ctx);
 
     if (EVP_CIPHER_CTX_is_encrypting(ctx)) {
@@ -177,7 +177,7 @@ static int sm4_ecb_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
 {
     size_t bl = EVP_CIPHER_CTX_get_block_size(ctx);
     size_t i;
-    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY, ctx);
     size_t blks;
 
     if (len < bl)
@@ -204,7 +204,8 @@ static int sm4_ctr_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
 {
     int n = EVP_CIPHER_CTX_get_num(ctx);
     unsigned int num;
-    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY,ctx);
+    EVP_SM4_KEY *dat = EVP_C_DATA(EVP_SM4_KEY, ctx);
+    unsigned char *ecount_buf = EVP_CIPHER_CTX_buf_noconst(ctx);
     size_t blks;
 
     if (n < 0)
@@ -228,7 +229,7 @@ static int sm4_ctr_cipher(EVP_CIPHER_CTX *ctx, unsigned char *out,
     if (len)
         CRYPTO_ctr128_encrypt(in, out, len, &dat->ks,
                               ctx->iv,
-                              EVP_CIPHER_CTX_buf_noconst(ctx), &num,
+                              ecount_buf, &num,
                               dat->block);
 
     EVP_CIPHER_CTX_set_num(ctx, num);
