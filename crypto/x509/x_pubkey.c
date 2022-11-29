@@ -130,6 +130,17 @@ static int x509_pubkey_decode(EVP_PKEY **ppkey, X509_PUBKEY *key)
         goto error;
     }
 
+#ifndef OPENSSL_NO_SM2
+    if (EVP_PKEY_id(pkey) == EVP_PKEY_EC) {
+        EC_KEY *eckey = EVP_PKEY_get0_EC_KEY(pkey);
+        if (eckey) {
+            const EC_GROUP *group = EC_KEY_get0_group(eckey);
+            if (group && EC_GROUP_get_curve_name(group) == NID_sm2)
+                EVP_PKEY_set_alias_type(pkey, EVP_PKEY_SM2);
+        }
+    }
+#endif
+
     *ppkey = pkey;
     return 1;
 
