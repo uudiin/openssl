@@ -73,6 +73,7 @@ static int eckey_pub_encode(X509_PUBKEY *pk, const EVP_PKEY *pkey)
     unsigned char *penc = NULL, *p;
     int penclen;
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (!eckey_param2type(&ptype, &pval, ec_key)) {
         ERR_raise(ERR_LIB_EC, ERR_R_EC_LIB);
         return 0;
@@ -87,6 +88,7 @@ static int eckey_pub_encode(X509_PUBKEY *pk, const EVP_PKEY *pkey)
     penclen = i2o_ECPublicKey(ec_key, &p);
     if (penclen <= 0)
         goto err;
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (X509_PUBKEY_set0_param(pk, OBJ_nid2obj(EVP_PKEY_EC),
                                ptype, pval, penc, penclen))
         return 1;

@@ -155,6 +155,7 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
     int signid, paramtype, buf_len = 0;
     int rv, pkey_id;
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     md = EVP_MD_CTX_get0_md(ctx);
     pkey = EVP_PKEY_CTX_get0_pkey(EVP_MD_CTX_get_pkey_ctx(ctx));
 
@@ -169,6 +170,7 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
         unsigned char aid[128];
         size_t aid_len = 0;
 
+        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (pctx == NULL
             || !EVP_PKEY_CTX_IS_SIGNATURE_OP(pctx)) {
             ERR_raise(ERR_LIB_ASN1, ASN1_R_CONTEXT_NOT_INITIALISED);
@@ -208,6 +210,7 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
 
         rv = 3;
     } else if (pkey->ameth->item_sign) {
+        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         rv = pkey->ameth->item_sign(ctx, it, data, algor1, algor2, signature);
         if (rv == 1)
             outl = signature->length;
@@ -223,9 +226,11 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
         if (rv <= 1)
             goto err;
     } else {
+        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         rv = 2;
     }
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (rv == 2) {
         if (md == NULL) {
             ERR_raise(ERR_LIB_ASN1, ASN1_R_CONTEXT_NOT_INITIALISED);
@@ -253,18 +258,21 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
             goto err;
     }
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     buf_len = ASN1_item_i2d(data, &buf_in, it);
     if (buf_len <= 0) {
         outl = 0;
         ERR_raise(ERR_LIB_ASN1, ERR_R_INTERNAL_ERROR);
         goto err;
     }
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     inl = buf_len;
     if (!EVP_DigestSign(ctx, NULL, &outll, buf_in, inl)) {
         outl = 0;
         ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
         goto err;
     }
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     outl = outll;
     buf_out = OPENSSL_malloc(outll);
     if (buf_in == NULL || buf_out == NULL) {
@@ -272,11 +280,13 @@ int ASN1_item_sign_ctx(const ASN1_ITEM *it, X509_ALGOR *algor1,
         goto err;
     }
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (!EVP_DigestSign(ctx, buf_out, &outl, buf_in, inl)) {
         outl = 0;
         ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
         goto err;
     }
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     ASN1_STRING_set0(signature, buf_out, outl);
     buf_out = NULL;
     /*
