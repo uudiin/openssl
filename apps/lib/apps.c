@@ -2258,6 +2258,25 @@ static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
         && do_pkey_ctx_init(pkctx, sigopts);
 }
 
+static int do_verify_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
+                          STACK_OF(OPENSSL_STRING) *vfyopts)
+{
+    EVP_PKEY_CTX *pkctx = NULL;
+    char def_md[80];
+
+    if (ctx == NULL)
+        return 0;
+
+    pkctx = EVP_PKEY_CTX_new_from_pkey(app_get0_libctx(), pkey,
+                                       app_get0_propq());
+    if (pkctx == NULL)
+        return 0;
+
+    EVP_MD_CTX_set_pkey_ctx(ctx, pkctx);
+
+    return do_pkey_ctx_init(pkctx, vfyopts);
+}
+
 static int adapt_keyid_ext(X509 *cert, X509V3_CTX *ext_ctx,
                            const char *name, const char *value, int add_default)
 {
@@ -2361,12 +2380,24 @@ int do_X509_CRL_sign(X509_CRL *x, EVP_PKEY *pkey, const char *md,
  */
 int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
 {
-    int rv = 0;
+    int rv = -1;
+    EVP_MD_CTX *mctx = EVP_MD_CTX_new();
 
+    if (mctx == NULL)
+        return rv;
+
+    if (do_verify_init(mctx, pkey, vfyopts) > 0)
+        rv = X509_verify_ctx(x, mctx);
+
+    EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
+    EVP_MD_CTX_free(mctx);
+
+    /*
     if (do_x509_init(x, vfyopts) > 0)
         rv = X509_verify(x, pkey);
     else
         rv = -1;
+    */
     return rv;
 }
 
@@ -2377,12 +2408,24 @@ int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
 int do_X509_REQ_verify(X509_REQ *x, EVP_PKEY *pkey,
                        STACK_OF(OPENSSL_STRING) *vfyopts)
 {
-    int rv = 0;
+    int rv = -1;
+    EVP_MD_CTX *mctx = EVP_MD_CTX_new();
 
+    if (mctx == NULL)
+        return rv;
+
+    if (do_verify_init(mctx, pkey, vfyopts) > 0)
+        rv = X509_REQ_verify_ctx(x, mctx);
+
+    EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
+    EVP_MD_CTX_free(mctx);
+
+    /*
     if (do_x509_req_init(x, vfyopts) > 0)
         rv = X509_REQ_verify_ex(x, pkey, app_get0_libctx(), app_get0_propq());
     else
         rv = -1;
+    */
     return rv;
 }
 
