@@ -96,6 +96,7 @@ int ASN1_item_verify_ex(const ASN1_ITEM *it, const X509_ALGOR *alg,
                         const ASN1_OCTET_STRING *id, EVP_PKEY *pkey,
                         OSSL_LIB_CTX *libctx, const char *propq)
 {
+    /*
     EVP_MD_CTX *ctx;
     int rv = -1;
 
@@ -104,6 +105,44 @@ int ASN1_item_verify_ex(const ASN1_ITEM *it, const X509_ALGOR *alg,
         EVP_PKEY_CTX_free(EVP_MD_CTX_get_pkey_ctx(ctx));
         EVP_MD_CTX_free(ctx);
     }
+    return rv;
+    */
+    /*------------------------------------------------------------------------*/
+    int rv = -1;
+    int mdnid, pknid;
+    const EVP_MD *md = NULL;
+    EVP_MD_CTX *ctx = evp_md_ctx_new_ex(pkey, id, libctx, propq);
+
+    if (ctx == NULL) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+        return rv;
+    }
+
+    /* Convert signature OID into digest and public key OIDs */
+    if (!OBJ_find_sigid_algs(OBJ_obj2nid(alg->algorithm), &mdnid, &pknid)) {
+        ERR_raise(ERR_LIB_ASN1, ASN1_R_UNKNOWN_SIGNATURE_ALGORITHM);
+        goto err;
+    }
+
+    if (mdnid != NID_undef) {
+        md = EVP_get_digestbynid(mdnid);
+        if (md == NULL) {
+            ERR_raise(ERR_LIB_ASN1, ASN1_R_UNKNOWN_MESSAGE_DIGEST_ALGORITHM);
+            goto err;
+        }
+    }
+
+    if (!EVP_DigestVerifyInit(ctx, NULL, md, NULL, pkey)) {
+        ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
+        rv = 0;
+        goto err;
+    }
+
+    rv = ASN1_item_verify_ctx(it, alg, signature, data, ctx);
+
+ err:
+    EVP_PKEY_CTX_free(EVP_MD_CTX_get_pkey_ctx(ctx));
+    EVP_MD_CTX_free(ctx);
     return rv;
 }
 
@@ -179,6 +218,7 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
                 goto err;
             }
 
+            /*
             if (mdnid != NID_undef) {
                 type = EVP_get_digestbynid(mdnid);
                 if (type == NULL) {
@@ -187,16 +227,20 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
                     goto err;
                 }
             }
+            */
 
+            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             /*
              * Note that some algorithms (notably Ed25519 and Ed448) may allow
              * a NULL digest value.
              */
+            /*
             if (!EVP_DigestVerifyInit(ctx, NULL, type, NULL, pkey)) {
                 ERR_raise(ERR_LIB_ASN1, ERR_R_EVP_LIB);
                 ret = 0;
                 goto err;
             }
+            */
         }
     }
 
