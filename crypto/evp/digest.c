@@ -114,6 +114,11 @@ EVP_MD_CTX *evp_md_ctx_new_ex(EVP_PKEY *pkey, const ASN1_OCTET_STRING *id,
         goto err;
     }
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
+    if (id != NULL)
+        fprintf(stdout, "%s : [%s] -- %d, [id_len = %d] '%s'\n",
+                __FILE__, __FUNCTION__, __LINE__,
+                id->length, id->data);
     if (id != NULL && EVP_PKEY_CTX_set1_id(pctx, id->data, id->length) <= 0)
         goto err;
 

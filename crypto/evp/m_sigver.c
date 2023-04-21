@@ -403,6 +403,7 @@ int EVP_DigestVerifyInit_ex(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
                             const char *props, EVP_PKEY *pkey,
                             const OSSL_PARAM params[])
 {
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return do_sigver_init(ctx, pctx, NULL, mdname, libctx, props, NULL, pkey, 1,
                           params);
 }
@@ -739,6 +740,7 @@ int EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
     fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_DigestVerifyUpdate(ctx, tbs, tbslen) <= 0)
         return -1;
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return EVP_DigestVerifyFinal(ctx, sigret, siglen);
 }
 #endif /* FIPS_MODULE */

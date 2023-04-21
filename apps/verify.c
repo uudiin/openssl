@@ -253,6 +253,7 @@ static int check(X509_STORE *ctx, const char *file,
     STACK_OF(X509) *chain = NULL;
     int num_untrusted;
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     x = load_cert(file, FORMAT_UNDEF, "certificate file");
     if (x == NULL)
         goto end;
@@ -269,6 +270,7 @@ static int check(X509_STORE *ctx, const char *file,
         }
     }
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     csc = X509_STORE_CTX_new();
     if (csc == NULL) {
         BIO_printf(bio_err, "error %s: X.509 store context allocation failed\n",
@@ -288,7 +290,9 @@ static int check(X509_STORE *ctx, const char *file,
         X509_STORE_CTX_set0_trusted_stack(csc, tchain);
     if (crls != NULL)
         X509_STORE_CTX_set0_crls(csc, crls);
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     i = X509_verify_cert(csc);
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (i > 0 && X509_STORE_CTX_get_error(csc) == X509_V_OK) {
         BIO_printf(bio_out, "%s: OK\n", (file == NULL) ? "stdin" : file);
         ret = 1;
@@ -330,6 +334,7 @@ static int cb(int ok, X509_STORE_CTX *ctx)
     int cert_error = X509_STORE_CTX_get_error(ctx);
     X509 *current_cert = X509_STORE_CTX_get_current_cert(ctx);
 
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (!ok) {
         if (current_cert != NULL) {
             X509_NAME_print_ex(bio_err,
