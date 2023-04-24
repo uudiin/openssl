@@ -2274,19 +2274,14 @@ static int do_verify_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
     if (ctx == NULL)
         return 0;
 
-    /*
     pkctx = EVP_PKEY_CTX_new_from_pkey(app_get0_libctx(), pkey,
                                        app_get0_propq());
     if (pkctx == NULL)
         return 0;
 
     EVP_MD_CTX_set_pkey_ctx(ctx, pkctx);
-    */
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-    return EVP_DigestVerifyInit_ex(ctx, &pkctx, NULL, app_get0_libctx(),
-                                   app_get0_propq(), pkey, NULL)
-        && do_pkey_ctx_init(pkctx, vfyopts);
+    return do_pkey_ctx_init(pkctx, vfyopts);
 }
 
 static int adapt_keyid_ext(X509 *cert, X509V3_CTX *ext_ctx,
@@ -2407,7 +2402,7 @@ int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
     }
 
     fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-    /*EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));*/
+    EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
     EVP_MD_CTX_free(mctx);
 
     /*
@@ -2439,7 +2434,7 @@ int do_X509_REQ_verify(X509_REQ *x, EVP_PKEY *pkey,
     }
 
     fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-    /*EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));*/
+    EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
     EVP_MD_CTX_free(mctx);
 
     /*

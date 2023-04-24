@@ -308,13 +308,6 @@ int sm2sig_digest_sign_final(void *vpsm2ctx, unsigned char *sig, size_t *siglen,
     return sm2sig_sign(vpsm2ctx, sig, siglen, sigsize, digest, (size_t)dlen);
 }
 
-int sm2sig_digest_sign(void *vpsm2ctx, unsigned char *sig, size_t *siglen,
-                       size_t sigsize, const unsigned char *tbs, size_t tbslen)
-{
-    PROV_SM2_CTX *psm2ctx = (PROV_SM2_CTX *)vpsm2ctx;
-    /* TODO */
-}
-
 
 int sm2sig_digest_verify_final(void *vpsm2ctx, const unsigned char *sig,
                                size_t siglen)
@@ -574,14 +567,12 @@ const OSSL_DISPATCH ossl_sm2_signature_functions[] = {
       (void (*)(void))sm2sig_digest_signverify_update },
     { OSSL_FUNC_SIGNATURE_DIGEST_SIGN_FINAL,
       (void (*)(void))sm2sig_digest_sign_final },
-    /*{ OSSL_FUNC_SIGNATURE_DIGEST_SIGN, (void (*)(void))sm2sig_digest_sign },*/
     { OSSL_FUNC_SIGNATURE_DIGEST_VERIFY_INIT,
       (void (*)(void))sm2sig_digest_signverify_init },
     { OSSL_FUNC_SIGNATURE_DIGEST_VERIFY_UPDATE,
       (void (*)(void))sm2sig_digest_signverify_update },
     { OSSL_FUNC_SIGNATURE_DIGEST_VERIFY_FINAL,
       (void (*)(void))sm2sig_digest_verify_final },
-    /*{ OSSL_FUNC_SIGNATURE_DIGEST_VERIFY, (void (*)(void))sm2sig_digest_verify },*/
     { OSSL_FUNC_SIGNATURE_FREECTX, (void (*)(void))sm2sig_freectx },
     { OSSL_FUNC_SIGNATURE_DUPCTX, (void (*)(void))sm2sig_dupctx },
     { OSSL_FUNC_SIGNATURE_GET_CTX_PARAMS, (void (*)(void))sm2sig_get_ctx_params },
