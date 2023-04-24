@@ -90,27 +90,6 @@ typedef struct {
     size_t id_len;
 } PROV_SM2_CTX;
 
-static void hex_dump(const char *prefix, const void *p, unsigned int len)
-{
-    char buffer[256];
-    int i = 0;
-	const unsigned char *buf = p;
-
-    for ( ; len > 0; len--) {
-        sprintf(&buffer[i * 2], "%02x", *buf++);
-        i += 1;
-        if (i == 32) {
-            buffer[i * 2] = '\0';
-            fprintf(stdout, "%s%s\n", prefix, buffer);
-            i = 0;
-        }
-    }
-    if (i > 0) {
-        buffer[i * 2] = '\0';
-        fprintf(stdout, "%s%s\n", prefix, buffer);
-    }
-}
-
 static int sm2sig_set_mdname(PROV_SM2_CTX *psm2ctx, const char *mdname)
 {
     if (psm2ctx->md == NULL) /* We need an SM3 md to compare with */
@@ -230,9 +209,6 @@ static int sm2sig_digest_signverify_init(void *vpsm2ctx, const char *mdname,
     WPACKET pkt;
     int ret = 0;
 
-    fprintf(stdout, "%s : [%s] -- %d, mdname = %s\n",
-            __FILE__, __FUNCTION__, __LINE__,
-            mdname);
     /* This default value may be overridden by parameters carried by params */
     ctx->flag_compute_z_digest = 1;
 
@@ -283,16 +259,13 @@ static int sm2sig_compute_z_digest(PROV_SM2_CTX *ctx)
         /* Only do this once */
         ctx->flag_compute_z_digest = 0;
 
-        fprintf(stdout, "%s : [%s] -- %d, [id_len = %d] '%s'\n",
-                __FILE__, __FUNCTION__, __LINE__,
-                ctx->id_len, ctx->id);
+        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if ((z = OPENSSL_zalloc(ctx->mdsize)) == NULL
             /* get hashed prefix 'z' of tbs message */
             || !ossl_sm2_compute_z_digest(z, ctx->md, ctx->id, ctx->id_len,
                                           ctx->ec)
             || !EVP_DigestUpdate(ctx->mdctx, z, ctx->mdsize))
             ret = 0;
-        hex_dump("Za: ", z, ctx->mdsize);
         OPENSSL_free(z);
     }
 
@@ -304,10 +277,7 @@ int sm2sig_digest_signverify_update(void *vpsm2ctx, const unsigned char *data,
 {
     PROV_SM2_CTX *psm2ctx = (PROV_SM2_CTX *)vpsm2ctx;
 
-    fprintf(stdout, "%s : [%s] -- %d, datalen = %d\n",
-            __FILE__, __FUNCTION__, __LINE__,
-            datalen);
-    hex_dump("data: ", data, datalen);
+    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (psm2ctx == NULL || psm2ctx->mdctx == NULL)
         return 0;
 
@@ -322,7 +292,6 @@ int sm2sig_digest_sign_final(void *vpsm2ctx, unsigned char *sig, size_t *siglen,
     unsigned char digest[EVP_MAX_MD_SIZE];
     unsigned int dlen = 0;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (psm2ctx == NULL || psm2ctx->mdctx == NULL)
         return 0;
 
@@ -354,7 +323,6 @@ int sm2sig_digest_verify_final(void *vpsm2ctx, const unsigned char *sig,
     unsigned char digest[EVP_MAX_MD_SIZE];
     unsigned int dlen = 0;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (psm2ctx == NULL
         || psm2ctx->mdctx == NULL
         || EVP_MD_get_size(psm2ctx->md) > (int)sizeof(digest))
@@ -364,7 +332,6 @@ int sm2sig_digest_verify_final(void *vpsm2ctx, const unsigned char *sig,
           && EVP_DigestFinal_ex(psm2ctx->mdctx, digest, &dlen)))
         return 0;
 
-    hex_dump("digest: ", digest, dlen);
     return sm2sig_verify(vpsm2ctx, sig, siglen, digest, (size_t)dlen);
 }
 

@@ -33,7 +33,6 @@ int X509_verify(X509 *a, EVP_PKEY *r)
     if (X509_ALGOR_cmp(&a->sig_alg, &a->cert_info.signature) != 0)
         return 0;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return ASN1_item_verify_ex(ASN1_ITEM_rptr(X509_CINF), &a->sig_alg,
                                &a->signature, &a->cert_info,
                                a->distinguishing_id, r, a->libctx, a->propq);
@@ -44,7 +43,6 @@ int X509_verify_ctx(X509 *a, EVP_MD_CTX *ctx)
     if (X509_ALGOR_cmp(&a->sig_alg, &a->cert_info.signature) != 0)
         return 0;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return ASN1_item_verify_ctx(ASN1_ITEM_rptr(X509_CINF), &a->sig_alg,
                                 &a->signature, &a->cert_info, ctx);
 }

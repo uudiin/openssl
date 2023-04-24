@@ -237,7 +237,6 @@ static int verify_chain(X509_STORE_CTX *ctx)
     int err;
     int ok;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if ((ok = build_chain(ctx)) <= 0
         || (ok = check_extensions(ctx)) <= 0
         || (ok = check_auth_level(ctx)) <= 0
@@ -287,7 +286,6 @@ int X509_STORE_CTX_verify(X509_STORE_CTX *ctx)
 
 int X509_verify_cert(X509_STORE_CTX *ctx)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ctx == NULL) {
         ERR_raise(ERR_LIB_X509, ERR_R_PASSED_NULL_PARAMETER);
         return -1;
@@ -303,7 +301,6 @@ static int x509_verify_rpk(X509_STORE_CTX *ctx)
 {
     int ret;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /* If the peer's public key is too weak, we can stop early. */
     if (!check_key_level(ctx, ctx->rpk)
         && verify_cb_cert(ctx, NULL, 0, X509_V_ERR_EE_KEY_TOO_SMALL) == 0)
@@ -332,7 +329,6 @@ static int x509_verify_x509(X509_STORE_CTX *ctx)
 {
     int ret;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ctx->cert == NULL) {
         ERR_raise(ERR_LIB_X509, X509_R_NO_CERT_SET_FOR_US_TO_VERIFY);
         ctx->error = X509_V_ERR_INVALID_CALL;
@@ -1820,7 +1816,6 @@ static int internal_verify(X509_STORE_CTX *ctx)
     X509 *xi;
     X509 *xs;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /* For RPK: just do the verify callback */
     if (ctx->rpk != NULL) {
         if (!ctx->verify_cb(ctx->error == X509_V_OK, ctx))
@@ -1900,16 +1895,13 @@ static int internal_verify(X509_STORE_CTX *ctx)
             int ret = xs == xi && (xi->ex_flags & EXFLAG_CA) == 0
                 ? X509_V_OK : ossl_x509_signing_allowed(xi, xs);
 
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             CB_FAIL_IF(ret != X509_V_OK, ctx, xi, issuer_depth, ret);
             if ((pkey = X509_get0_pubkey(xi)) == NULL) {
                 CB_FAIL_IF(1, ctx, xi, issuer_depth,
                            X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY);
             } else {
-                fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
                 CB_FAIL_IF(X509_verify(xs, pkey) <= 0,
                            ctx, xs, n, X509_V_ERR_CERT_SIGNATURE_FAILURE);
-                fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             }
         }
 
@@ -1918,7 +1910,6 @@ static int internal_verify(X509_STORE_CTX *ctx)
         if (!ossl_x509_check_cert_time(ctx, xs, n))
             return 0;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         /*
          * Signal success at this depth.  However, the previous error (if any)
          * is retained.
@@ -3123,7 +3114,6 @@ static int dane_verify(X509_STORE_CTX *ctx)
     int matched;
     int done;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     dane_reset(dane);
 
     /*-
