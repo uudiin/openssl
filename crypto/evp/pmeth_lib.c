@@ -157,9 +157,6 @@ static int get_legacy_alg_type_from_keymgmt(const EVP_KEYMGMT *keymgmt)
 
 int evp_pkey_ctx_state(const EVP_PKEY_CTX *ctx)
 {
-    fprintf(stdout, "%s : [%s] -- %d <-----> SIGNCTX=%x operation = %x\n",
-            __FILE__, __FUNCTION__, __LINE__,
-            EVP_PKEY_OP_SIGNCTX, ctx->operation);
     if (ctx->operation == EVP_PKEY_OP_UNDEFINED)
         return EVP_PKEY_STATE_UNKNOWN;
 
@@ -684,7 +681,6 @@ int EVP_PKEY_CTX_is_a(EVP_PKEY_CTX *ctx, const char *keytype)
 
 int EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     switch (evp_pkey_ctx_state(ctx)) {
     case EVP_PKEY_STATE_PROVIDER:
         if (EVP_PKEY_CTX_IS_DERIVE_OP(ctx)
@@ -693,14 +689,12 @@ int EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params)
             return
                 ctx->op.kex.exchange->set_ctx_params(ctx->op.kex.algctx,
                                                      params);
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (EVP_PKEY_CTX_IS_SIGNATURE_OP(ctx)
             && ctx->op.sig.signature != NULL
             && ctx->op.sig.signature->set_ctx_params != NULL)
             return
                 ctx->op.sig.signature->set_ctx_params(ctx->op.sig.algctx,
                                                       params);
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (EVP_PKEY_CTX_IS_ASYM_CIPHER_OP(ctx)
             && ctx->op.ciph.cipher != NULL
             && ctx->op.ciph.cipher->set_ctx_params != NULL)
@@ -723,11 +717,9 @@ int EVP_PKEY_CTX_set_params(EVP_PKEY_CTX *ctx, const OSSL_PARAM *params)
 #ifndef FIPS_MODULE
     case EVP_PKEY_STATE_UNKNOWN:
     case EVP_PKEY_STATE_LEGACY:
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         return evp_pkey_ctx_set_params_to_ctrl(ctx, params);
 #endif
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return 0;
 }
 
@@ -811,7 +803,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
 {
     void *provctx;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_PKEY_CTX_IS_DERIVE_OP(ctx)
             && ctx->op.kex.exchange != NULL
             && ctx->op.kex.exchange->settable_ctx_params != NULL) {
@@ -819,7 +810,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
         return ctx->op.kex.exchange->settable_ctx_params(ctx->op.kex.algctx,
                                                          provctx);
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_PKEY_CTX_IS_SIGNATURE_OP(ctx)
             && ctx->op.sig.signature != NULL
             && ctx->op.sig.signature->settable_ctx_params != NULL) {
@@ -828,7 +818,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
         return ctx->op.sig.signature->settable_ctx_params(ctx->op.sig.algctx,
                                                           provctx);
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_PKEY_CTX_IS_ASYM_CIPHER_OP(ctx)
             && ctx->op.ciph.cipher != NULL
             && ctx->op.ciph.cipher->settable_ctx_params != NULL) {
@@ -837,7 +826,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
         return ctx->op.ciph.cipher->settable_ctx_params(ctx->op.ciph.algctx,
                                                         provctx);
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_PKEY_CTX_IS_GEN_OP(ctx)
             && ctx->keymgmt != NULL
             && ctx->keymgmt->gen_settable_params != NULL) {
@@ -845,7 +833,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
         return ctx->keymgmt->gen_settable_params(ctx->op.keymgmt.genctx,
                                                  provctx);
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_PKEY_CTX_IS_KEM_OP(ctx)
         && ctx->op.encap.kem != NULL
         && ctx->op.encap.kem->settable_ctx_params != NULL) {
@@ -853,7 +840,6 @@ const OSSL_PARAM *EVP_PKEY_CTX_settable_params(const EVP_PKEY_CTX *ctx)
         return ctx->op.encap.kem->settable_ctx_params(ctx->op.encap.algctx,
                                                       provctx);
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return NULL;
 }
 
@@ -874,7 +860,6 @@ int evp_pkey_ctx_set_params_strict(EVP_PKEY_CTX *ctx, OSSL_PARAM *params)
     if (ctx == NULL || params == NULL)
         return 0;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /*
      * We only check for provider side EVP_PKEY_CTX.  For #legacy, we
      * depend on the translation that happens in EVP_PKEY_CTX_set_params()
@@ -882,7 +867,6 @@ int evp_pkey_ctx_set_params_strict(EVP_PKEY_CTX *ctx, OSSL_PARAM *params)
      * known the ctrl command number.
      */
     if (evp_pkey_ctx_is_provided(ctx)) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         const OSSL_PARAM *settable = EVP_PKEY_CTX_settable_params(ctx);
         const OSSL_PARAM *p;
 
@@ -1226,7 +1210,6 @@ int evp_pkey_ctx_set1_id_prov(EVP_PKEY_CTX *ctx, const void *id, int len)
     OSSL_PARAM params[2], *p = params;
     int ret;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (!EVP_PKEY_CTX_IS_SIGNATURE_OP(ctx)) {
         ERR_raise(ERR_LIB_EVP, EVP_R_COMMAND_NOT_SUPPORTED);
         /* Uses the same return values as EVP_PKEY_CTX_ctrl */
@@ -1392,10 +1375,8 @@ static int evp_pkey_ctx_ctrl_str_int(EVP_PKEY_CTX *ctx,
         return -2;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     switch (evp_pkey_ctx_state(ctx)) {
     case EVP_PKEY_STATE_PROVIDER:
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         return evp_pkey_ctx_ctrl_str_to_param(ctx, name, value);
     case EVP_PKEY_STATE_UNKNOWN:
     case EVP_PKEY_STATE_LEGACY:
@@ -1412,7 +1393,6 @@ static int evp_pkey_ctx_ctrl_str_int(EVP_PKEY_CTX *ctx,
         break;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return ret;
 }
 

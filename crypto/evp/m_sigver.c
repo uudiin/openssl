@@ -72,7 +72,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     if (evp_pkey_ctx_is_legacy(locpctx))
         goto legacy;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /* do not reinitialize if pkey is set or operation is different */
     if (reinit
         && (pkey != NULL
@@ -136,7 +135,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     for (iter = 1, provkey = NULL; iter < 3 && provkey == NULL; iter++) {
         EVP_KEYMGMT *tmp_keymgmt_tofree = NULL;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         /*
          * If we're on the second iteration, free the results from the first.
          * They are NULL on the first iteration, so no need to check what
@@ -196,7 +194,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
 
     /* No more legacy from here down to legacy: */
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     locpctx->op.sig.signature = signature;
     locpctx->operation = ver ? EVP_PKEY_OP_VERIFYCTX
                              : EVP_PKEY_OP_SIGNCTX;
@@ -256,13 +253,11 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
         }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ver) {
         if (signature->digest_verify_init == NULL) {
             ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
             goto err;
         }
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         ret = signature->digest_verify_init(locpctx->op.sig.algctx,
                                             mdname, provkey, params);
     } else {
@@ -270,7 +265,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
             ERR_raise(ERR_LIB_EVP, EVP_R_INITIALIZATION_ERROR);
             goto err;
         }
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         ret = signature->digest_sign_init(locpctx->op.sig.algctx,
                                           mdname, provkey, params);
     }
@@ -284,7 +278,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     if (type == NULL)   /* This check is redundant but clarifies matters */
         ERR_raise(ERR_LIB_EVP, EVP_R_NO_DEFAULT_DIGEST);
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
  err:
     evp_pkey_ctx_free_old_ops(locpctx);
     locpctx->operation = EVP_PKEY_OP_UNDEFINED;
@@ -323,33 +316,25 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     }
 
     if (ver) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (ctx->pctx->pmeth->verifyctx_init) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             if (ctx->pctx->pmeth->verifyctx_init(ctx->pctx, ctx) <= 0)
                 return 0;
             ctx->pctx->operation = EVP_PKEY_OP_VERIFYCTX;
         } else if (ctx->pctx->pmeth->digestverify != 0) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             ctx->pctx->operation = EVP_PKEY_OP_VERIFY;
             ctx->update = update;
         } else if (EVP_PKEY_verify_init(ctx->pctx) <= 0) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             return 0;
         }
     } else {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (ctx->pctx->pmeth->signctx_init) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             if (ctx->pctx->pmeth->signctx_init(ctx->pctx, ctx) <= 0)
                 return 0;
             ctx->pctx->operation = EVP_PKEY_OP_SIGNCTX;
         } else if (ctx->pctx->pmeth->digestsign != 0) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             ctx->pctx->operation = EVP_PKEY_OP_SIGN;
             ctx->update = update;
         } else if (EVP_PKEY_sign_init(ctx->pctx) <= 0) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             return 0;
         }
     }
@@ -372,7 +357,6 @@ static int do_sigver_init(EVP_MD_CTX *ctx, EVP_PKEY_CTX **pctx,
     ret = 1;
 
  end:
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
 #ifndef FIPS_MODULE
     if (ret > 0)
         ret = evp_pkey_ctx_use_cached_data(locpctx);
@@ -706,37 +690,27 @@ int EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
 {
     EVP_PKEY_CTX *pctx = ctx->pctx;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if ((ctx->flags & EVP_MD_CTX_FLAG_FINALISED) != 0) {
         ERR_raise(ERR_LIB_EVP, EVP_R_FINAL_ERROR);
         return 0;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (pctx != NULL
             && pctx->operation == EVP_PKEY_OP_VERIFYCTX
             && pctx->op.sig.algctx != NULL
             && pctx->op.sig.signature != NULL) {
-        fprintf(stdout, "%s : [%s] -- %d, digest_verify = %p\n",
-                __FILE__, __FUNCTION__, __LINE__,
-                pctx->op.sig.signature->digest_verify);
         if (pctx->op.sig.signature->digest_verify != NULL) {
             ctx->flags |= EVP_MD_CTX_FLAG_FINALISED;
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             return pctx->op.sig.signature->digest_verify(pctx->op.sig.algctx,
                                                          sigret, siglen,
                                                          tbs, tbslen);
         }
     } else {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         /* legacy */
-        if (ctx->pctx->pmeth != NULL && ctx->pctx->pmeth->digestverify != NULL) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
+        if (ctx->pctx->pmeth != NULL && ctx->pctx->pmeth->digestverify != NULL)
             return ctx->pctx->pmeth->digestverify(ctx, sigret, siglen, tbs, tbslen);
-        }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (EVP_DigestVerifyUpdate(ctx, tbs, tbslen) <= 0)
         return -1;
     return EVP_DigestVerifyFinal(ctx, sigret, siglen);

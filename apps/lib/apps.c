@@ -2040,7 +2040,6 @@ int pkey_ctrl_string(EVP_PKEY_CTX *ctx, const char *value)
 
     *vtmp = 0;
     vtmp++;
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     rv = EVP_PKEY_CTX_ctrl_str(ctx, stmp, vtmp);
 
  err:
@@ -2180,11 +2179,9 @@ static int do_pkey_ctx_init(EVP_PKEY_CTX *pkctx, STACK_OF(OPENSSL_STRING) *opts)
 {
     int i;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (opts == NULL)
         return 1;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     for (i = 0; i < sk_OPENSSL_STRING_num(opts); i++) {
         char *opt = sk_OPENSSL_STRING_value(opts, i);
 
@@ -2195,7 +2192,6 @@ static int do_pkey_ctx_init(EVP_PKEY_CTX *pkctx, STACK_OF(OPENSSL_STRING) *opts)
         }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return 1;
 }
 
@@ -2245,10 +2241,8 @@ static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
     EVP_PKEY_CTX *pkctx = NULL;
     char def_md[80];
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ctx == NULL)
         return 0;
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /*
      * EVP_PKEY_get_default_digest_name() returns 2 if the digest is mandatory
      * for this algorithm.
@@ -2259,7 +2253,6 @@ static int do_sign_init(EVP_MD_CTX *ctx, EVP_PKEY *pkey,
         md = NULL;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return EVP_DigestSignInit_ex(ctx, &pkctx, md, app_get0_libctx(),
                                  app_get0_propq(), pkey, NULL)
         && do_pkey_ctx_init(pkctx, sigopts);
@@ -2331,7 +2324,6 @@ int do_X509_sign(X509 *cert, int force_v1, EVP_PKEY *pkey, const char *md,
     int rv = 0;
 
     if (!force_v1) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (!X509_set_version(cert, X509_VERSION_3))
             goto end;
 
@@ -2349,7 +2341,6 @@ int do_X509_sign(X509 *cert, int force_v1, EVP_PKEY *pkey, const char *md,
             goto end;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (mctx != NULL && do_sign_init(mctx, pkey, md, sigopts) > 0)
         rv = (X509_sign_ctx(cert, mctx) > 0);
  end:
@@ -2395,13 +2386,9 @@ int do_X509_verify(X509 *x, EVP_PKEY *pkey, STACK_OF(OPENSSL_STRING) *vfyopts)
     if (mctx == NULL)
         return rv;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-    if (do_verify_init(mctx, pkey, vfyopts) > 0) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
+    if (do_verify_init(mctx, pkey, vfyopts) > 0)
         rv = X509_verify_ctx(x, mctx);
-    }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
     EVP_MD_CTX_free(mctx);
 
@@ -2427,13 +2414,9 @@ int do_X509_REQ_verify(X509_REQ *x, EVP_PKEY *pkey,
     if (mctx == NULL)
         return rv;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-    if (do_verify_init(mctx, pkey, vfyopts) > 0) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
+    if (do_verify_init(mctx, pkey, vfyopts) > 0)
         rv = X509_REQ_verify_ctx(x, mctx);
-    }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     EVP_PKEY_CTX_free(EVP_MD_CTX_pkey_ctx(mctx));
     EVP_MD_CTX_free(mctx);
 

@@ -623,7 +623,6 @@ int req_main(int argc, char **argv)
                    "Warning: Not generating key via given -newkey option since -key is given\n");
         /* Better throw an error in this case */
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (newreq && pkey == NULL) {
         app_RAND_load_conf(req_conf, section);
 
@@ -671,7 +670,6 @@ int req_main(int argc, char **argv)
             }
         }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         EVP_PKEY_CTX_set_cb(genctx, progress_cb);
         EVP_PKEY_CTX_set_app_data(genctx, bio_err);
 
@@ -686,7 +684,6 @@ int req_main(int argc, char **argv)
             ERR_clear_error();
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (pkey != NULL && (keyfile == NULL || keyout != NULL)) {
         if (verbose) {
             BIO_printf(bio_err, "Writing private key to ");
@@ -699,7 +696,6 @@ int req_main(int argc, char **argv)
         if (out == NULL)
             goto end;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         p = NCONF_get_string(req_conf, section, "encrypt_rsa_key");
         if (p == NULL) {
             ERR_clear_error();
@@ -729,7 +725,6 @@ int req_main(int argc, char **argv)
         BIO_printf(bio_err, "-----\n");
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     /*
      * subj is expected to be in the format /type0=value0/type1=value1/type2=...
      * where characters may be escaped by \
@@ -752,7 +747,6 @@ int req_main(int argc, char **argv)
         /* Better throw an error in this case, as done in the x509 app */
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (CAkeyfile == NULL)
         CAkeyfile = CAfile;
     if (CAkeyfile != NULL) {
@@ -768,7 +762,6 @@ int req_main(int argc, char **argv)
                 goto end;
         }
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (CAfile != NULL) {
         if ((CAcert = load_cert_pass(CAfile, FORMAT_UNDEF, 1, passin,
                                      "issuer cert from -CA arg")) == NULL)
@@ -779,7 +772,6 @@ int req_main(int argc, char **argv)
             goto end;
         }
     }
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (newreq || gen_x509) {
         if (CAcert == NULL && pkey == NULL) {
             BIO_printf(bio_err, "Must provide a signature key using -key or"
@@ -879,7 +871,6 @@ int req_main(int argc, char **argv)
                 }
             }
 
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             i = do_X509_sign(new_x509, x509v1, issuer_key, digest, sigopts,
                              &ext_ctx);
             if (!i)
@@ -887,7 +878,6 @@ int req_main(int argc, char **argv)
         } else {
             X509V3_CTX ext_ctx;
 
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             if (precert) {
                 BIO_printf(bio_err,
                            "Warning: Ignoring -precert flag since no cert is produced\n");
@@ -915,7 +905,6 @@ int req_main(int argc, char **argv)
         }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (subj != NULL && !newreq && !gen_x509) {
         if (verbose) {
             BIO_printf(out, "Modifying subject of certificate request\n");
@@ -932,7 +921,6 @@ int req_main(int argc, char **argv)
         }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (verify) {
         EVP_PKEY *tpubkey = pkey;
 
@@ -942,9 +930,7 @@ int req_main(int argc, char **argv)
                 goto end;
         }
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         i = do_X509_REQ_verify(req, tpubkey, vfyopts);
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
 
         if (i < 0)
             goto end;
@@ -959,7 +945,6 @@ int req_main(int argc, char **argv)
         goto end;
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     out = bio_open_default(outfile,
                            keyout != NULL && outfile != NULL &&
                            strcmp(keyout, outfile) == 0 ? 'a' : 'w',
@@ -998,7 +983,6 @@ int req_main(int argc, char **argv)
                    : X509_REQ_get_subject_name(req));
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (modulus) {
         EVP_PKEY *tpubkey;
 

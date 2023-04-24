@@ -116,7 +116,6 @@ static void *sm2sig_newctx(void *provctx, const char *propq)
 {
     PROV_SM2_CTX *ctx = OPENSSL_zalloc(sizeof(PROV_SM2_CTX));
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ctx == NULL)
         return NULL;
 
@@ -254,12 +253,10 @@ static int sm2sig_compute_z_digest(PROV_SM2_CTX *ctx)
     uint8_t *z = NULL;
     int ret = 1;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ctx->flag_compute_z_digest) {
         /* Only do this once */
         ctx->flag_compute_z_digest = 0;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if ((z = OPENSSL_zalloc(ctx->mdsize)) == NULL
             /* get hashed prefix 'z' of tbs message */
             || !ossl_sm2_compute_z_digest(z, ctx->md, ctx->id, ctx->id_len,
@@ -277,7 +274,6 @@ int sm2sig_digest_signverify_update(void *vpsm2ctx, const unsigned char *data,
 {
     PROV_SM2_CTX *psm2ctx = (PROV_SM2_CTX *)vpsm2ctx;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (psm2ctx == NULL || psm2ctx->mdctx == NULL)
         return 0;
 
@@ -426,30 +422,23 @@ static int sm2sig_set_ctx_params(void *vpsm2ctx, const OSSL_PARAM params[])
     const OSSL_PARAM *p;
     size_t mdsize;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
-
     if (psm2ctx == NULL)
         return 0;
     if (params == NULL)
         return 1;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_SM2_ZA);
     if (p != NULL) {
         char *v = NULL;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (!OSSL_PARAM_get_utf8_string(p, &v, 0))
             return 0;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         /*
          * If 'sm2-za:no' is specified, omit computing the z digest
          */
-        if (OPENSSL_strcasecmp(v, "no") == 0) {
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
+        if (OPENSSL_strcasecmp(v, "no") == 0)
             psm2ctx->flag_compute_z_digest = 0;
-        }
 
         OPENSSL_free(v);
     }
@@ -511,7 +500,6 @@ static const OSSL_PARAM known_settable_ctx_params[] = {
 static const OSSL_PARAM *sm2sig_settable_ctx_params(ossl_unused void *vpsm2ctx,
                                                     ossl_unused void *provctx)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return known_settable_ctx_params;
 }
 

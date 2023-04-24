@@ -570,7 +570,6 @@ static int default_fixup_args(enum state state,
             }
 
             settable = EVP_PKEY_CTX_settable_params(ctx->pctx);
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             if (!OSSL_PARAM_allocate_from_text(ctx->params, settable,
                                                tmp_ctrl_str,
                                                ctx->p2, strlen(ctx->p2),
@@ -2623,7 +2622,6 @@ lookup_translation(struct translation_st *tmpl,
 static const struct translation_st *
 lookup_evp_pkey_ctx_translation(struct translation_st *tmpl)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return lookup_translation(tmpl, evp_pkey_ctx_translations,
                               OSSL_NELEM(evp_pkey_ctx_translations));
 }
@@ -2631,7 +2629,6 @@ lookup_evp_pkey_ctx_translation(struct translation_st *tmpl)
 static const struct translation_st *
 lookup_evp_pkey_translation(struct translation_st *tmpl)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return lookup_translation(tmpl, evp_pkey_translations,
                               OSSL_NELEM(evp_pkey_translations));
 }
@@ -2648,7 +2645,6 @@ int evp_pkey_ctx_ctrl_to_param(EVP_PKEY_CTX *pctx,
     int ret;
     fixup_args_fn *fixup = default_fixup_args;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (keytype == -1)
         keytype = pctx->legacy_keytype;
     tmpl.ctrl_num = cmd;
@@ -2719,7 +2715,6 @@ int evp_pkey_ctx_ctrl_str_to_param(EVP_PKEY_CTX *pctx,
     int ret;
     fixup_args_fn *fixup = default_fixup_args;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     tmpl.action_type = SET;
     tmpl.keytype1 = tmpl.keytype2 = keytype;
     tmpl.optype = optype;
@@ -2727,8 +2722,6 @@ int evp_pkey_ctx_ctrl_str_to_param(EVP_PKEY_CTX *pctx,
     tmpl.ctrl_hexstr = name;
     translation = lookup_evp_pkey_ctx_translation(&tmpl);
 
-    fprintf(stdout, "%s : [%s] -- %d --> translation = %p\n",
-            __FILE__, __FUNCTION__, __LINE__, translation);
     if (translation != NULL) {
         if (translation->fixup_args != NULL)
             fixup = translation->fixup_args;
@@ -2746,8 +2739,6 @@ int evp_pkey_ctx_ctrl_str_to_param(EVP_PKEY_CTX *pctx,
 
     ret = fixup(PRE_CTRL_STR_TO_PARAMS, translation, &ctx);
 
-    fprintf(stdout, "%s : [%s] -- %d --> ret = %d, action_type = %d\n",
-            __FILE__, __FUNCTION__, __LINE__, ret, ctx.action_type);
     if (ret > 0) {
         switch (ctx.action_type) {
         default:
@@ -2760,13 +2751,11 @@ int evp_pkey_ctx_ctrl_str_to_param(EVP_PKEY_CTX *pctx,
              */
             break;
         case SET:
-            fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
             ret = evp_pkey_ctx_set_params_strict(pctx, ctx.params);
             break;
         }
     }
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     if (ret > 0)
         ret = fixup(POST_CTRL_STR_TO_PARAMS, translation, &ctx);
 
@@ -2783,7 +2772,6 @@ static int evp_pkey_ctx_setget_params_to_ctrl(EVP_PKEY_CTX *pctx,
     int keytype = pctx->legacy_keytype;
     int optype = pctx->operation == 0 ? -1 : pctx->operation;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     for (; params != NULL && params->key != NULL; params++) {
         struct translation_ctx_st ctx = { 0, };
         struct translation_st tmpl = { 0, };
@@ -2846,7 +2834,6 @@ static int evp_pkey_setget_params_to_ctrl(const EVP_PKEY *pkey,
 {
     int ret = 1;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     for (; params != NULL && params->key != NULL; params++) {
         struct translation_ctx_st ctx = { 0, };
         struct translation_st tmpl = { 0, };
@@ -2885,6 +2872,5 @@ static int evp_pkey_setget_params_to_ctrl(const EVP_PKEY *pkey,
 
 int evp_pkey_get_params_to_ctrl(const EVP_PKEY *pkey, OSSL_PARAM *params)
 {
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     return evp_pkey_setget_params_to_ctrl(pkey, GET, params);
 }

@@ -136,7 +136,6 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
     }
 
     if (mdnid == NID_undef && evp_pkey_is_legacy(pkey)) {
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         if (pkey->ameth == NULL || pkey->ameth->item_verify == NULL) {
             ERR_raise(ERR_LIB_ASN1, ASN1_R_UNKNOWN_SIGNATURE_ALGORITHM);
             goto err;
@@ -155,7 +154,6 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
     } else {
         const EVP_MD *type = NULL;
 
-        fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
         /*
          * We don't yet have the ability for providers to be able to handle
          * X509_ALGOR style parameters. Fortunately the only one that needs this
@@ -211,7 +209,6 @@ int ASN1_item_verify_ctx(const ASN1_ITEM *it, const X509_ALGOR *alg,
     }
     inll = inl;
 
-    fprintf(stdout, "%s : [%s] -- %d\n", __FILE__, __FUNCTION__, __LINE__);
     ret = EVP_DigestVerify(ctx, signature->data, (size_t)signature->length,
                            buf_in, inl);
     if (ret <= 0) {
