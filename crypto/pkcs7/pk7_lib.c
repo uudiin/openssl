@@ -318,6 +318,9 @@ static int pkcs7_ecdsa_or_dsa_sign_verify_setup(PKCS7_SIGNER_INFO *si,
             return -1;
         if (!OBJ_find_sigid_by_algs(&snid, hnid, EVP_PKEY_get_id(pkey)))
             return -1;
+        fprintf(stderr, "%s [%d]: %s, hnid = %d, snid = %d\n",
+                __FILE__, __LINE__, __FUNCTION__,
+                hnid, snid);
         return X509_ALGOR_set0(alg2, OBJ_nid2obj(snid), V_ASN1_UNDEF, NULL);
     }
     return 1;
@@ -334,6 +337,38 @@ static int pkcs7_rsa_sign_verify_setup(PKCS7_SIGNER_INFO *si, int verify)
                                    V_ASN1_NULL, NULL);
     }
     return 1;
+}
+
+static int pkcs7_sign_verify_setup(PKCS7_SIGNER_INFO *si, EVP_PKEY *pkey)
+{
+    int id;
+    int snid, hnid;
+    int ptype;
+    X509_ALGOR *alg1, *alg2;
+
+    PKCS7_SIGNER_INFO_get0_algs(si, NULL, &alg1, &alg2);
+
+    id = EVP_PKEY_get_id(pkey);
+    switch (id) {
+    //case NID_ec:
+    case NID_dsa:
+    case NID_sm2:
+        if (alg1 == NULL || alg1->algorithm == NULL)
+            return -1;
+        hnid = OBJ_obj2nid(alg1->algorithm);
+        if (hnid == NID_undef)
+            return -1;
+        if (!OBJ_find_sigid_by_algs(&snid, hnid, id))
+            return -1;
+        ptype = V_ASN1_UNDEF;
+        break;
+
+    case NID_rsa:
+        snid = NID_rsaEncryption;
+        ptype = V_ASN1_NULL;
+        break;
+    }
+    return X509_ALGOR_set0(alg2, OBJ_nid2obj(snid), ptype, NULL);
 }
 
 int PKCS7_SIGNER_INFO_set(PKCS7_SIGNER_INFO *p7i, X509 *x509, EVP_PKEY *pkey,
@@ -367,6 +402,11 @@ int PKCS7_SIGNER_INFO_set(PKCS7_SIGNER_INFO *p7i, X509 *x509, EVP_PKEY *pkey,
                          V_ASN1_NULL, NULL))
         return 0;
 
+    fprintf(stderr, "%s [%d]: %s, id = %d\n",
+            __FILE__, __LINE__, __FUNCTION__,
+            EVP_PKEY_get_id(pkey));
+    //if (pkcs7_sign_verify_setup(p7i, pkey) > 0)
+    //    return 1;
     if (EVP_PKEY_is_a(pkey, "EC")
             || EVP_PKEY_is_a(pkey, "DSA")
             || EVP_PKEY_is_a(pkey, "SM2"))
